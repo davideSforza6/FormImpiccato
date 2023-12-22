@@ -4,10 +4,12 @@ namespace Impiccato
 {
     public partial class Form1 : Form
     {
-        char[] lettereProvate;
-        byte nLettereProvate = 0;
-        string[] elencoParole;
-        string daIndovinare;
+        char[] lettereProvate; //raccolta delle singole lettere inserite dall'utente
+        byte nLettereProvate = 0; //numero delle lettere provate, punta alla prima posizione libera di "lettereProvate"
+        string[] elencoParole; //vocabolario delle parole
+        string daIndovinare; //parola da indovinare
+        byte erroriRimasti; //numero di errori rimasti
+        byte nAsterischi; //numero di asterischi stampati nella listBox, necessario per la condizione di vittoria
 
 
         public Form1()
@@ -24,12 +26,15 @@ namespace Impiccato
                 elencoParole = Deserializza();
             }
 
-            lettereProvate = new char[26]; //reinizializzo il vettore delle lettere provate
-
             //selezione della parola
             Random x = new Random();
             int posizione = x.Next(elencoParole.Length);
             daIndovinare = elencoParole[posizione];
+
+            //reinizializzo il vettore delle lettere provate e il numero di errori rimasti
+            lettereProvate = new char[26];
+            erroriRimasti = 7;
+            labelErroriRimasti.Text = $"Errori rimasti: {erroriRimasti}";
 
             listBox1.Items.Add(daIndovinare);//temp
         }
@@ -38,40 +43,61 @@ namespace Impiccato
         {
             listBox1.Items.Clear();
 
-            //la lettera inserita dall'utente nella textbox viene inserita nel vettore delle lettere provate
-            //se non è presente una lettera uguale
-            char lettera = Convert.ToChar(textBoxTentativo.Text);
-            if (!CercaLettera(lettereProvate, lettera))
+            char lettera = '\0';
+            string parola = "";
+
+            if (textBoxTentativo.Text.Length == 1)
             {
-                lettereProvate[nLettereProvate] = lettera;
-                nLettereProvate++;
+                lettera = Convert.ToChar(textBoxTentativo.Text);
+                //la lettera inserita dall'utente nella textbox viene inserita nel vettore delle lettere provate
+                //se non è presente una lettera uguale
+                if (!CercaLettera(lettereProvate, lettera))
+                {
+                    lettereProvate[nLettereProvate] = lettera;
+                    nLettereProvate++;
+                }
+            }
+            else
+            {
+                parola = textBoxTentativo.Text;
             }
 
 
-            bool trovata = false;
-            //controllo per ogni lettera della parola da indovinare se l'utente ha inserito una lettera corrispondente
-            for (int i = 0; i < daIndovinare.Length; i++)
+            if (erroriRimasti != 0 && lettera != '\0')
             {
-                for (int j = 0; j < lettereProvate.Length; j++)
+                AggiornaListBox();
+                //se l'utente ha indovinato tutte le lettere della parola mostro nell'interfaccia il messaggio di vittoria
+                if (nAsterischi == 0)
                 {
-                    if (daIndovinare[i] == lettereProvate[j])
-                    {
-                        trovata = true;
-                    }
+                    labelRisultato.Text = "Hai vinto!";
                 }
 
-                //se nel vettore delle lettere provate è presente l'iesima lettera della parola da indovnare
-                //aggiungo nella listbox la lettera, in caso contrario aggiungo un asterisco
-                if (trovata)
+                //controllo se la lettera inserita dall'utente è presente nella parola da indovinare,
+                //se non è presente diminuisco gli errori rimasti.
+                if (!CercaLettera(daIndovinare.ToCharArray(), lettera))
                 {
-                    listBox1.Items.Add(daIndovinare[i]);
-                    trovata = false;
+                    erroriRimasti--;
+                }
+            }
+            else if(parola != "")
+            {
+                if (parola == daIndovinare)
+                {
+                    labelRisultato.Text = "Hai vinto!";
+                    listBox1.Items.Add(daIndovinare);
                 }
                 else
                 {
-                    listBox1.Items.Add("*");
+                    erroriRimasti--;
+                    AggiornaListBox();
                 }
             }
+            else if (erroriRimasti == 0)
+            {
+                labelRisultato.Text = "Hai perso!";
+            }
+
+            labelErroriRimasti.Text = erroriRimasti.ToString();
         }
 
         public string[] Deserializza()
@@ -97,6 +123,39 @@ namespace Impiccato
                 }
             }
             return isPresente;
+        }
+
+        /// <summary>
+        /// Aggiorna il contenuto della listbox in base alle lettere provate
+        /// </summary>
+        public void AggiornaListBox()
+        {
+            bool trovata = false;
+            nAsterischi = Convert.ToByte(daIndovinare.Length);
+            //controllo per ogni lettera della parola da indovinare se l'utente ha inserito una lettera corrispondente
+            for (int i = 0; i < daIndovinare.Length; i++)
+            {
+                for (int j = 0; j < lettereProvate.Length; j++)
+                {
+                    if (daIndovinare[i] == lettereProvate[j])
+                    {
+                        trovata = true;
+                    }
+                }
+
+                //se nel vettore delle lettere provate è presente l'iesima lettera della parola da indovnare
+                //aggiungo nella listbox la lettera, in caso contrario aggiungo un asterisco
+                if (trovata)
+                {
+                    listBox1.Items.Add(daIndovinare[i]);
+                    nAsterischi--;
+                    trovata = false;
+                }
+                else
+                {
+                    listBox1.Items.Add("*");
+                }
+            }
         }
     }
 }
